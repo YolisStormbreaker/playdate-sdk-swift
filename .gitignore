@@ -5,6 +5,8 @@
 ## User settings
 xcuserdata/
 
+.nova/
+
 ## Obj-C/Swift specific
 *.hmap
 
