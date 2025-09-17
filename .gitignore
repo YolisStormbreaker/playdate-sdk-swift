@@ -6,6 +6,14 @@
 xcuserdata/
 
 .nova/
+.swiftpm/
+build/
+
+.DS_Store
+
+pdex.dylib
+pdex.elf
+*.pdx
 
 ## Obj-C/Swift specific
 *.hmap

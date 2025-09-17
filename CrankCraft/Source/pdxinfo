@@ -1,0 +1,8 @@
+name=CrankCraft
+author=Roman Élyséev
+description=Crank your way through the magical world of Playdate SDK with Swift development!
+bundleID=com.yolis.crankcraft
+version=1.0
+buildNumber=101
+imagePath=/assets/images/launcher
+launchSoundPath=/assets/sounds/launch.wav
