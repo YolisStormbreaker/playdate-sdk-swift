@@ -14,6 +14,10 @@ Tags:
   EnumExtensibility: open
 - Name: LCDFontLanguage
   EnumExtensibility: open
+- Name: PDTextWrappingMode
+  EnumExtensibility: open
+- Name: PDTextAlignment
+  EnumExtensibility: open
 - Name: PDStringEncoding
   EnumExtensibility: open
 - Name: SpriteCollisionResponseType

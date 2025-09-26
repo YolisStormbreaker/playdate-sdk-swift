@@ -5,6 +5,12 @@ var graphicsAPI: playdate_graphics { playdateAPI.graphics.unsafelyUnwrapped.poin
 /// Access the Playdate graphics system.
 public enum Graphics {}
 
+public extension LCDSolidColor {
+    var asLCDColor: LCDColor {
+        return LCDColor(self.rawValue)
+    }
+}
+
 extension Graphics {
   /// Pushes a new drawing context for drawing into the given bitmap.
   ///
@@ -63,26 +69,6 @@ extension Graphics {
   /// Sets the end cap style used in the line drawing functions.
   public static func setLineCapStyle(endCapStyle: LCDLineCapStyle) {
     graphicsAPI.setLineCapStyle.unsafelyUnwrapped(endCapStyle)
-  }
-
-  /// Sets the font to use in subsequent drawText calls.
-  public static func setFont(font: OpaquePointer?) {
-    graphicsAPI.setFont.unsafelyUnwrapped(font)
-  }
-
-  /// Sets the tracking to use when drawing text.
-  public static func setTextTracking(tracking: Int32) {
-    graphicsAPI.setTextTracking.unsafelyUnwrapped(tracking)
-  }
-
-  /// Gets the tracking used when drawing text.
-  public static func getTextTracking() -> Int32 {
-    graphicsAPI.getTextTracking.unsafelyUnwrapped()
-  }
-
-  /// Sets the leading adjustment (added to the leading specified in the font) to use when drawing text.
-  public static func setTextLeading(leading: Int32) {
-    graphicsAPI.setTextLeading.unsafelyUnwrapped(leading)
   }
 }
 
@@ -215,6 +201,101 @@ extension Graphics {
   /// Fills the polygon with vertices at the given coordinates using the given color and fill, or winding, rule.
   public static func fillPolygon(nPoints: Int32, points: UnsafeMutablePointer<Int32>?, color: LCDColor, fillRule: LCDPolygonFillRule) {
     graphicsAPI.fillPolygon.unsafelyUnwrapped(nPoints, points, color, fillRule)
+  }
+}
+
+// MARK: - Text
+extension Graphics {
+  /// Draws the given text using the provided options. 
+  /// If no font has been set with setFont, the default system font Asheville Sans 14 Light is used.
+  /// Returns the width of the drawn text.
+  public static func drawText(
+      _ text: String, 
+      encoding: PDStringEncoding, 
+      x: Int32, 
+      y: Int32
+  ) -> Int32 {
+      return text.withCString(encodedAs: UTF8.self) { textPtr in
+          let length = text.utf8.count
+          return graphicsAPI.drawText.unsafelyUnwrapped(
+              textPtr,           // const void* text
+              length,            // size_t len 
+              encoding,          // PDStringEncoding encoding
+              x,                 // int x
+              y                  // int y
+          )
+      }
+  }
+  
+  //// Draws the text in the given rectangle using the provided options.
+  /// If no font has been set with setFont, the default system font Asheville Sans 14 Light is used.
+  /// This function does not return a value.
+  public static func drawTextInRect(
+      _ text: String,
+      encoding: PDStringEncoding,
+      x: Int32,
+      y: Int32, 
+      width: Int32,
+      height: Int32,
+      wrap: PDTextWrappingMode,
+      align: PDTextAlignment
+  ) {
+      text.withCString(encodedAs: UTF8.self) { textPtr in
+          let length = text.utf8.count
+          graphicsAPI.drawTextInRect.unsafelyUnwrapped(
+              textPtr,           // const void* text
+              length,            // size_t len
+              encoding,          // PDStringEncoding encoding  
+              x,                 // int x
+              y,                 // int y
+              width,             // int width
+              height,            // int height
+              wrap,              // PDTextWrappingMode wrap
+              align              // PDTextAlignment align
+          )
+      }
+  }
+
+  /// Draws text with UTF-8 encoding (convenience method)
+  public static func drawText(_ text: String, x: Int32, y: Int32) -> Int32 {
+      return drawText(text, encoding: PDStringEncoding.kUTF8Encoding, x: x, y: y)
+  }
+  
+  /// Draws text in rectangle with UTF-8 encoding (convenience method)  
+  public static func drawTextInRect(
+      _ text: String,
+      x: Int32, y: Int32, width: Int32, height: Int32,
+      wrap: PDTextWrappingMode = kWrapWord,
+      align: PDTextAlignment = kAlignTextLeft
+  ) {
+      drawTextInRect(
+          text, 
+          encoding: PDStringEncoding.kUTF8Encoding, 
+          x: x, y: y, width: width, height: height,
+          wrap: wrap, 
+          align: align
+      )
+  }
+
+  
+  /// Sets the font to use in subsequent drawText calls.
+  public static func setFont(font: OpaquePointer?) {
+    graphicsAPI.setFont.unsafelyUnwrapped(font)
+  }
+  
+  /// Sets the tracking to use when drawing text.
+  public static func setTextTracking(tracking: Int32) {
+    graphicsAPI.setTextTracking.unsafelyUnwrapped(tracking)
+  }
+  
+  /// Gets the tracking used when drawing text.
+  public static func getTextTracking() -> Int32 {
+    graphicsAPI.getTextTracking.unsafelyUnwrapped()
+  }
+  
+  /// Sets the leading adjustment (added to the leading specified in the font) to use when drawing text.
+  public static func setTextLeading(leading: Int32) {
+    graphicsAPI.setTextLeading.unsafelyUnwrapped(leading)
   }
 }
 

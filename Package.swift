@@ -34,7 +34,7 @@ let cSettingsSimulator: [CSetting] = [
 ]
 
 let package = Package(
-  name: "swift-playdate-examples",
+  name: "playdate-sdk-swift",
   platforms: [
     .macOS(.v14)
   ],

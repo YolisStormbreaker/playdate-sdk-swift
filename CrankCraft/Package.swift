@@ -32,13 +32,13 @@ let package = Package(
     .library(name: "CrankCraft", targets: ["CrankCraft"])
   ],
   dependencies: [
-    .package(path: "../..")
+    .package(path: "../")
   ],
   targets: [
     .target(
       name: "CrankCraft",
       dependencies: [
-        .product(name: "Playdate", package: "swift-playdate-examples")
+        .product(name: "Playdate", package: "playdate-sdk-swift")
       ],
       swiftSettings: swiftSettingsSimulator)
   ],
