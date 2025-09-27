@@ -15,12 +15,12 @@ struct Game {
     srand(System.getSecondsSinceEpoch(milliseconds: nil))
     Display.setRefreshRate(rate: 0)
     if (font == nil) {
-      let result = Graphics.loadFont(path: fontPath)
+      let result = GraphicsLegacy.loadFont(path: fontPath)
       switch result {
         case .success(let font):
-            Graphics.setFont(font)
+            GraphicsLegacy.setFont(font)
         case .failure(let error):
-            Graphics.drawText("Failed to load font: \(error)", x: 10, y: 10)
+            GraphicsLegacy.drawText("Failed to load font: \(error)", x: 10, y: 10)
         }
     }
   }
@@ -30,8 +30,8 @@ struct Game {
     let TEXT_WIDTH: Int32 = 86
     let TEXT_HEIGHT: Int32 = 16
     
-    Graphics.clear(color: LCDSolidColor.colorWhite.asLCDColor)
-    let _ = Graphics.drawText(
+    GraphicsLegacy.clear(color: LCDSolidColor.colorWhite.asLCDColor)
+    let _ = GraphicsLegacy.drawText(
         "Hello World!",
         encoding: PDStringEncoding.kUTF8Encoding,
         x: x, 
