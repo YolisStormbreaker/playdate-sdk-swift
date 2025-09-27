@@ -265,8 +265,8 @@ extension Graphics {
   public static func drawTextInRect(
       _ text: String,
       x: Int32, y: Int32, width: Int32, height: Int32,
-      wrap: PDTextWrappingMode = kWrapWord,
-      align: PDTextAlignment = kAlignTextLeft
+      wrap: PDTextWrappingMode = PDTextWrappingMode.wrapWord,
+      align: PDTextAlignment = PDTextAlignment.alignTextLeft
   ) {
       drawTextInRect(
           text, 
@@ -275,12 +275,6 @@ extension Graphics {
           wrap: wrap, 
           align: align
       )
-  }
-
-  
-  /// Sets the font to use in subsequent drawText calls.
-  public static func setFont(font: OpaquePointer?) {
-    graphicsAPI.setFont.unsafelyUnwrapped(font)
   }
   
   /// Sets the tracking to use when drawing text.
@@ -296,6 +290,122 @@ extension Graphics {
   /// Sets the leading adjustment (added to the leading specified in the font) to use when drawing text.
   public static func setTextLeading(leading: Int32) {
     graphicsAPI.setTextLeading.unsafelyUnwrapped(leading)
+  }
+}
+
+public typealias LCDFont = OpaquePointer
+
+// MARK: - Font
+extension Graphics {
+  
+  public enum FontError: Error {
+      case fileNotFound(String)
+      case invalidFormat(String)
+      case loadFailed(String)
+      
+      var localizedDescription: String {
+          switch self {
+          case .fileNotFound(let message):
+              return "Font not found: \(message)"
+          case .invalidFormat(let message):
+              return "Wrong font's format: \(message)"
+          case .loadFailed(let message):
+              return "Can't load font: \(message)"
+          }
+      }
+  }
+  
+  /// Returns the LCDFont object for the font file at path.
+  /// In case of error, returns an error string describing the issue.
+  /// The returned font can be freed with system realloc when no longer in use.
+  ///
+  /// - Parameter path: Path to the font file (e.g., "/System/Fonts/Asheville-Sans-14-Bold.pft")
+  /// - Returns: Result containing either the loaded font or error description
+  ///
+  /// Example usage:
+  /// ```swift
+  /// let result = loadFont(path: "/System/Fonts/Asheville-Sans-14-Bold.pft")
+  /// switch result {
+  /// case .success(let font):
+  ///     print("Font loaded successfully")
+  /// case .failure(let error):
+  ///     print("Failed to load font: \(error)")
+  /// }
+  /// ```
+  ///
+  /// - SeeAlso: [Official Documentation](https://sdk.play.date/inside-playdate-with-c/#f-graphics.loadFont)
+  public static func loadFont(path: String) -> Result<LCDFont, FontError> {
+      return path.withCString { pathPtr in
+          var errorPtr: UnsafePointer<CChar>? = nil
+          
+          let font = graphicsAPI.loadFont.unsafelyUnwrapped(pathPtr, &errorPtr)
+          
+          if let font = font {
+              return .success(font)
+          } else {
+              let errorMessage: FontError
+              if let errorPtr = errorPtr {
+                  errorMessage = FontError.fileNotFound(String(cString: errorPtr))
+              } else {
+                  errorMessage = FontError.loadFailed("Unknown error occurred while loading font")
+              }
+              return .failure(errorMessage)
+          }
+      }
+  }
+  
+  /// Sets the font to use in subsequent drawText calls.
+  /// 
+  /// This function establishes which font will be used for all text drawing operations
+  /// until a different font is set or the default font is restored.
+  ///
+  /// - Parameter font: The LCDFont pointer obtained from loadFont() function
+  ///
+  /// Example usage:
+  /// ```swift
+  /// let result = loadFont(path: "/System/Fonts/Asheville-Sans-14-Bold.pft")
+  /// switch result {
+  /// case .success(let font):
+  ///     setFont(font)
+  ///     
+  ///     let width = drawText("Hello, World!", x: 10, y: 20)
+  ///     drawTextInRect("Long text...", x: 0, y: 40, width: 200, height: 100)
+  ///     
+  /// case .failure(let error):
+  ///     print("Failed to load font: \(error)")
+  /// }
+  /// ```
+  ///
+  /// - Note: Equivalent to `playdate.graphics.setFont()` in the Lua API
+  /// - SeeAlso: [Official Documentation](https://sdk.play.date/inside-playdate-with-c/#f-graphics.setFont)
+  public static func setFont(_ font: LCDFont) {
+      graphicsAPI.setFont.unsafelyUnwrapped(font)
+  }
+
+}
+
+// MARK: - Drawing
+extension Graphics {
+  /// Clears the entire display, filling it with the specified color.
+  /// 
+  /// This function fills the complete screen with a solid color, effectively
+  /// erasing all previously drawn content.
+  ///
+  /// - Parameter color: The color to fill the screen with (LCDColor type)
+  ///
+  /// Example usage:
+  /// ```swift
+  /// // Clear screen with black color
+  /// Graphics.clear(color: LCDSolidColor.kColorBlack.rawValue)
+  /// 
+  /// // Clear screen with white color  
+  /// Graphics.clear(color: LCDSolidColor.kColorWhite.rawValue)
+  /// ```
+  ///
+  /// - Note: Equivalent to `playdate.graphics.clear()` in the Lua API
+  /// - SeeAlso: [Official Documentation](https://sdk.play.date/inside-playdate-with-c/#f-graphics.clear)
+  public static func clear(color: LCDColor) {
+      graphicsAPI.clear.unsafelyUnwrapped(color)
   }
 }
 
