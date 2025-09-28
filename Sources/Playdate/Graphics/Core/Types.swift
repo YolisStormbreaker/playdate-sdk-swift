@@ -92,7 +92,9 @@ public enum BitmapDrawMode: UInt32 {
 	case inverted = 7
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDBitmapDrawMode { 
+		return LCDBitmapDrawMode(rawValue: self.rawValue).unsafelyUnwrapped	
+	}
 }
 
 /// Bitmap Reflection modes - Swift wrapper for LCDBitmapFlip
@@ -103,7 +105,9 @@ public enum BitmapFlip: UInt32 {
 	case xy = 3
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDBitmapFlip {
+		return LCDBitmapFlip(rawValue: self.rawValue).unsafelyUnwrapped
+	}
 }
 
 // MARK: - Colors and Patterns
@@ -115,7 +119,9 @@ public enum SolidColor: UInt32, Sendable {
 	case xor = 3
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDSolidColor { 
+		return LCDSolidColor(rawValue: self.rawValue).unsafelyUnwrapped
+	 }
 }
 
 /// An 8x8 pixel fill pattern
@@ -162,7 +168,9 @@ public enum LineCapStyle: UInt32 {
 	case round = 2
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDLineCapStyle { 
+		return LCDLineCapStyle(rawValue: self.rawValue).unsafelyUnwrapped
+ 	}
 }
 
 /// Font Languages - Swift wrapper for LCDFontLanguage
@@ -172,7 +180,9 @@ public enum FontLanguage: UInt32 {
 	case unknown = 2
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDFontLanguage {
+		return LCDFontLanguage(rawValue: self.rawValue).unsafelyUnwrapped
+	}
 }
 
 /// String Encodings - Swift wrapper for PDStringEncoding
@@ -182,7 +192,9 @@ public enum StringEncoding: UInt32 {
 	case utf16LE = 2
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: PDStringEncoding {
+		return PDStringEncoding(rawValue: self.rawValue).unsafelyUnwrapped
+	}
 }
 
 // MARK: - Polygon and Text Settings
@@ -192,7 +204,9 @@ public enum PolygonFillRule: UInt32 {
 	case evenOdd = 1
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: LCDPolygonFillRule { 
+		return LCDPolygonFillRule(rawValue: self.rawValue)
+	 }
 }
 
 /// Text wrapping Modes - Swift wrapper for PDTextWrappingMode
@@ -202,7 +216,9 @@ public enum TextWrappingMode: UInt32 {
 	case word = 2
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: PDTextWrappingMode { 
+		return PDTextWrappingMode(rawValue: self.rawValue).unsafelyUnwrapped
+	 }
 }
 
 /// Text Alignment - Swift wrapper for PDTextAlignment
@@ -212,7 +228,9 @@ public enum TextAlignment: UInt32 {
 	case right = 2
 	
 	/// Conversion to C enum value
-	public var cValue: UInt32 { rawValue }
+	public var cValue: PDTextAlignment {
+		return PDTextAlignment(rawValue: self.rawValue).unsafelyUnwrapped
+	}
 }
 
 // MARK: - Extensions для удобства работы
