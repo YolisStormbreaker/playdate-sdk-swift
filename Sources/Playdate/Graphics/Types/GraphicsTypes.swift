@@ -164,6 +164,13 @@ public enum Color: Sendable {
     public static let white = Color.solid(.white)
     public static let clear = Color.solid(.clear)
     public static let xor = Color.solid(.xor)
+
+    public var cValue: LCDColor {
+        return switch self {
+        case .solid: self.cValue
+        case .pattern: self.cValue
+        }
+    }
 }
 
 // MARK: - Line and Font Settings

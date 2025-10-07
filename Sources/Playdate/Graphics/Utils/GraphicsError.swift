@@ -43,14 +43,14 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - width: Requested bitmap width
     ///   - height: Requested bitmap height
-    case bitmapCreationFailed(width: Int, height: Int)
+    case bitmapCreationFailed(width: Int32, height: Int32)
 
     /// Failed to create new bitmap table in memory
     /// - Parameters:
     ///   - count: Requested number of bitmaps
     ///   - width: Requested bitmap width
     ///   - height: Requested bitmap height
-    case bitmapTableCreationFailed(count: Int, width: Int, height: Int)
+    case bitmapTableCreationFailed(count: Int32, width: Int32, height: Int32)
 
     /// Failed to copy bitmap
     /// - Parameter source: Description of the source bitmap
@@ -68,13 +68,13 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - index: The invalid index
     ///   - count: Valid range (0..<count)
-    case invalidBitmapIndex(index: Int, count: Int)
+    case invalidBitmapIndex(index: Int32, count: Int32)
 
     /// Invalid dimensions for graphics operation
     /// - Parameters:
     ///   - width: Provided width
     ///   - height: Provided height
-    case invalidDimensions(width: Int, height: Int)
+    case invalidDimensions(width: Int32, height: Int32)
 
     /// Invalid color or pattern
     /// - Parameter description: Description of the invalid color
@@ -82,15 +82,15 @@ public enum GraphicsError: Error {
 
     /// Invalid rectangle for clipping or drawing
     /// - Parameter rect: The invalid rectangle
-    case invalidRect(x: Int, y: Int, width: Int, height: Int)
+    case invalidRect(x: Int32, y: Int32, width: Int32, height: Int32)
 
     /// Invalid draw mode
     /// - Parameter mode: The invalid mode value
-    case invalidDrawMode(mode: Int)
+    case invalidDrawMode(mode: Int32)
 
     /// Invalid text encoding
     /// - Parameter encoding: The invalid encoding value
-    case invalidEncoding(encoding: Int)
+    case invalidEncoding(encoding: Int32)
 
     // MARK: Graphics Context Errors
 
@@ -116,7 +116,7 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - frame: The frame number that failed
     ///   - reason: Optional C API error message
-    case videoFrameRenderFailed(frame: Int, reason: String?)
+    case videoFrameRenderFailed(frame: Int32, reason: String?)
 
     /// Failed to set video context
     /// - Parameter reason: Optional C API error message
@@ -126,7 +126,7 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - frame: The invalid frame number
     ///   - totalFrames: Total frames in video
-    case invalidVideoFrame(frame: Int, totalFrames: Int)
+    case invalidVideoFrame(frame: Int32, totalFrames: Int32)
 
     // MARK: Memory Errors
 
@@ -134,7 +134,7 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - operation: Description of the operation that failed
     ///   - size: Requested memory size in bytes (optional)
-    case memoryAllocationFailed(operation: String, size: Int?)
+    case memoryAllocationFailed(operation: String, size: Int32?)
 
     /// Out of memory
     case outOfMemory
@@ -178,13 +178,13 @@ public enum GraphicsError: Error {
     /// - Parameters:
     ///   - tilesWide: Width in tiles
     ///   - tilesHigh: Height in tiles
-    case invalidTilemapSize(tilesWide: Int, tilesHigh: Int)
+    case invalidTilemapSize(tilesWide: Int32, tilesHigh: Int32)
 
     /// Invalid tile position
     /// - Parameters:
     ///   - x: Tile X coordinate
     ///   - y: Tile Y coordinate
-    case invalidTilePosition(x: Int, y: Int)
+    case invalidTilePosition(x: Int32, y: Int32)
 
     // MARK: Font Errors
 
@@ -225,6 +225,15 @@ public enum GraphicsError: Error {
     /// Operation not supported in current context
     /// - Parameter operation: The unsupported operation
     case notSupported(operation: String)
+
+    /// Transformation operation failed
+    /// - Parameters:
+    ///   - operation: Type of transformation (rotate, scale, flip)
+    ///   - message: Error details
+    case bitmapTransformFailed(operation: String, reason: String)
+
+    /// Generic error with custom message
+    case custom(message: String)
 }
 
 // MARK: - Error Description
@@ -363,6 +372,12 @@ extension GraphicsError: CustomStringConvertible {
 
         case let .notSupported(operation):
             return "Operation not supported: \(operation)"
+
+        case let .bitmapTransformFailed(operation, reason):
+            return "Operation \(operation) failed by \(reason)"
+
+        case let .custom(message):
+            return message
         }
     }
 }
@@ -434,7 +449,7 @@ public extension GraphicsError {
     static let errorDomain = "com.panic.playdate.graphics"
 
     /// Numeric error code for each case (useful for logging and debugging)
-    var errorCode: Int {
+    var errorCode: Int32 {
         switch self {
         // Resource Loading: 1000-1099
         case .bitmapLoadFailed: return 1000
@@ -446,6 +461,7 @@ public extension GraphicsError {
         case .bitmapTableCreationFailed: return 1101
         case .bitmapCopyFailed: return 1102
         case .bitmapRotationFailed: return 1103
+        case .bitmapTransformFailed: return 1104
         // Invalid Parameters: 1200-1299
         case .invalidBitmapIndex: return 1200
         case .invalidDimensions: return 1201
@@ -487,6 +503,7 @@ public extension GraphicsError {
         // Generic Errors: 9000+
         case .unknown: return 9000
         case .notSupported: return 9001
+        case .custom: return 9002
         }
     }
 }
