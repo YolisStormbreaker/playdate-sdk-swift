@@ -73,10 +73,10 @@ public final class Bitmap {
 
     // MARK: - Initialization - Creation
 
-    // MARK: - Private Initialization
+    // MARK: - Initialization
 
     /// Internal unsafe initializer - assumes pointer is valid
-    private init(ownedPointer ptr: OpaquePointer, sourcePath: String?) {
+    public init(ownedPointer ptr: OpaquePointer, _ sourcePath: String? = nil) {
         pointer = ptr
         ownership = .owned
         self.sourcePath = sourcePath
@@ -84,7 +84,7 @@ public final class Bitmap {
 
     /// Internal initializer for borrowed bitmap pointer (system owned)
     /// - Parameter borrowedPointer: Pointer to system-owned bitmap (won't be freed)
-    private init(borrowedPointer: OpaquePointer) {
+    public init(borrowedPointer: OpaquePointer) {
         pointer = borrowedPointer
         ownership = .borrowed
         sourcePath = nil
@@ -125,7 +125,7 @@ public final class Bitmap {
             ))
         }
 
-        return .success(Bitmap(ownedPointer: ptr, sourcePath: nil))
+        return .success(Bitmap(ownedPointer: ptr, nil))
     }
 
     /// Create a new bitmap with Size
@@ -166,7 +166,7 @@ public final class Bitmap {
             ))
         }
 
-        return .success(Bitmap(ownedPointer: ptr, sourcePath: path))
+        return .success(Bitmap(ownedPointer: ptr, path))
     }
 
     /// Load bitmap into existing bitmap (replaces content)
@@ -203,7 +203,7 @@ public final class Bitmap {
             ))
         }
 
-        return .success(Bitmap(ownedPointer: ptr, sourcePath: other.sourcePath))
+        return .success(Bitmap(ownedPointer: ptr, other.sourcePath))
     }
 
     /// Create a copy of the current display buffer
@@ -217,7 +217,7 @@ public final class Bitmap {
             ))
         }
 
-        return .success(Bitmap(ownedPointer: ptr, sourcePath: nil))
+        return .success(Bitmap(ownedPointer: ptr, nil))
     }
 
     // MARK: - System Bitmap Access
@@ -266,7 +266,7 @@ public final class Bitmap {
             return nil
         }
 
-        self.init(ownedPointer: ptr, sourcePath: nil)
+        self.init(ownedPointer: ptr, nil)
     }
 
     /// Convenience failable initializer for loading bitmap
@@ -280,7 +280,7 @@ public final class Bitmap {
             return nil
         }
 
-        self.init(ownedPointer: ptr, sourcePath: path)
+        self.init(ownedPointer: ptr, path)
     }
 
     /// Convenience failable initializer for copying bitmap
@@ -292,7 +292,7 @@ public final class Bitmap {
             return nil
         }
 
-        self.init(ownedPointer: ptr, sourcePath: other.sourcePath)
+        self.init(ownedPointer: ptr, other.sourcePath)
     }
 
     /// Convenience failable initializer with Size
@@ -338,7 +338,7 @@ public extension Bitmap {
         }
 
         let colorValue = graphicsAPI.getBitmapPixel(pointer, x, y)
-        return SolidColor(rawValue: colorValue.rawValue)
+        return SolidColor(rawValue: UInt32(colorValue.rawValue))
     }
 
     /// Get color at point
@@ -1815,11 +1815,11 @@ public extension Bitmap {
         ) else {
             throw GraphicsError.bitmapTransformFailed(
                 operation: "rotation",
-                reason: "Failed to rotate bitmap by \(rotation)°"
+                reason: "Failed to rotate bitmap by \(rotation.string)°"
             )
         }
 
-        return Bitmap(ownedPointer: ptr, sourcePath: sourcePath)
+        return Bitmap(ownedPointer: ptr, sourcePath)
     }
 
     /// Create a scaled copy of this bitmap

@@ -113,8 +113,27 @@ public enum BitmapDrawMode: UInt32 {
     case inverted = 7
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: LCDBitmapDrawMode {
-        return LCDBitmapDrawMode(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .copy:
+            return LCDBitmapDrawMode.drawModeCopy
+        case .whiteTransparent:
+            return LCDBitmapDrawMode.drawModeWhiteTransparent
+        case .blackTransparent:
+            return LCDBitmapDrawMode.drawModeBlackTransparent
+        case .fillWhite:
+            return LCDBitmapDrawMode.drawModeFillWhite
+        case .fillBlack:
+            return LCDBitmapDrawMode.drawModeFillBlack
+        case .xor:
+            return LCDBitmapDrawMode.drawModeXOR
+        case .nxor:
+            return LCDBitmapDrawMode.drawModeNXOR
+        case .inverted:
+            return LCDBitmapDrawMode.drawModeInverted
+        }
     }
 }
 
@@ -126,8 +145,19 @@ public enum BitmapFlip: UInt32, Sendable {
     case xy = 3
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: LCDBitmapFlip {
-        return LCDBitmapFlip(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .none:
+            return LCDBitmapFlip.bitmapUnflipped
+        case .x:
+            return LCDBitmapFlip.bitmapFlippedX
+        case .y:
+            return LCDBitmapFlip.bitmapFlippedY
+        case .xy:
+            return LCDBitmapFlip.bitmapFlippedXY
+        }
     }
 }
 
@@ -142,7 +172,12 @@ public enum SolidColor: UInt32, Sendable {
 
     /// Conversion to C enum value
     public var cValue: LCDSolidColor {
-        return LCDSolidColor(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .black: return LCDSolidColor.colorBlack
+        case .white: return LCDSolidColor.colorWhite
+        case .clear: return LCDSolidColor.colorClear
+        case .xor: return LCDSolidColor.colorXOR
+        }
     }
 
     public var colorValue: LCDColor {
@@ -215,8 +250,17 @@ public enum LineCapStyle: UInt32 {
     case round = 2
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: LCDLineCapStyle {
-        return LCDLineCapStyle(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .butt:
+            return LCDLineCapStyle.lineCapStyleButt
+        case .square:
+            return LCDLineCapStyle.lineCapStyleSquare
+        case .round:
+            return LCDLineCapStyle.lineCapStyleRound
+        }
     }
 }
 
@@ -227,8 +271,17 @@ public enum FontLanguage: UInt32 {
     case unknown = 2
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: LCDFontLanguage {
-        return LCDFontLanguage(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .english:
+            return LCDFontLanguage.english
+        case .japanese:
+            return LCDFontLanguage.japanese
+        case .unknown:
+            return LCDFontLanguage.unknown
+        }
     }
 }
 
@@ -239,8 +292,17 @@ public enum StringEncoding: UInt32 {
     case utf16LE = 2
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: PDStringEncoding {
-        return PDStringEncoding(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .ascii:
+            return PDStringEncoding.kASCIIEncoding
+        case .utf8:
+            return PDStringEncoding.kUTF8Encoding
+        case .utf16LE:
+            return PDStringEncoding.k16BitLEEncoding
+        }
     }
 }
 
@@ -252,8 +314,15 @@ public enum PolygonFillRule: UInt32 {
     case evenOdd = 1
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: LCDPolygonFillRule {
-        return LCDPolygonFillRule(rawValue: rawValue)
+        switch self {
+        case .nonZero:
+            return kPolygonFillNonZero
+        case .evenOdd:
+            return kPolygonFillEvenOdd
+        }
     }
 }
 
@@ -264,8 +333,17 @@ public enum TextWrappingMode: UInt32 {
     case word = 2
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: PDTextWrappingMode {
-        return PDTextWrappingMode(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .clip:
+            return PDTextWrappingMode.wrapClip
+        case .character:
+            return PDTextWrappingMode.wrapCharacter
+        case .word:
+            return PDTextWrappingMode.wrapWord
+        }
     }
 }
 
@@ -276,8 +354,17 @@ public enum TextAlignment: UInt32 {
     case right = 2
 
     /// Conversion to C enum value
+    ///
+    /// Uses explicit C constants to avoid type ambiguity
     public var cValue: PDTextAlignment {
-        return PDTextAlignment(rawValue: rawValue).unsafelyUnwrapped
+        switch self {
+        case .left:
+            return PDTextAlignment.alignTextLeft
+        case .center:
+            return PDTextAlignment.alignTextCenter
+        case .right:
+            return PDTextAlignment.alignTextRight
+        }
     }
 }
 

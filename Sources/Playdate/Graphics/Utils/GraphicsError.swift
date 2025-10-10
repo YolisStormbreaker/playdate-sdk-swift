@@ -265,7 +265,7 @@ extension GraphicsError: CustomStringConvertible {
             return "Failed to copy bitmap: \(source)"
 
         case let .bitmapRotationFailed(rotation, scale):
-            return "Failed to rotate bitmap by \(rotation)° with scale (\(scale.x), \(scale.y))"
+            return "Failed to rotate bitmap by \(rotation.string)° with scale (\(scale.x.string), \(scale.y.string))"
 
         // Invalid Parameter Errors
         case let .invalidBitmapIndex(index, count):
@@ -403,6 +403,30 @@ extension GraphicsError {
     static func nullPointer(function: String, cError: UnsafePointer<CChar>? = nil) -> GraphicsError {
         let reason = cError.map { String(cString: $0) }
         return .nullPointerReturned(function: function, reason: reason)
+    }
+}
+
+public extension Float {
+    /// Simple Float to String conversion (2 decimal places)
+    var string: String {
+        if isNaN { return "NaN" }
+        if isInfinite { return self > 0 ? "Inf" : "-Inf" }
+
+        let isNeg = self < 0
+        let abs = isNeg ? -self : self
+        let int = Int32(abs)
+        let frac = Int32((abs - Float(int)) * 100.0 + 0.5)
+
+        var result = isNeg ? "-" : ""
+        result += "\(int)."
+
+        if frac < 10 {
+            result += "0\(frac)"
+        } else {
+            result += "\(frac)"
+        }
+
+        return result
     }
 }
 

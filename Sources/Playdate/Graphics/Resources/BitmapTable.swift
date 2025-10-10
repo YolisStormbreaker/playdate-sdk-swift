@@ -162,6 +162,21 @@ public final class BitmapTable {
         sourcePath = nil
         _count = count
     }
+
+    /// Deinitializer - frees owned tables
+    deinit {
+        if ownership == .owned {
+            // Free the C bitmap table structure
+            // This invalidates ALL bitmaps obtained from this table
+            graphicsAPI.freeBitmapTable(pointer)
+        }
+        // borrowed tables are not freed - system manages them
+    }
+
+    /// Internal access to C pointer for C API operations
+    var cPointer: OpaquePointer {
+        return pointer
+    }
 }
 
 // MARK: - Static Factory Methods - Creation
@@ -943,23 +958,6 @@ public extension BitmapTable {
     /// ```
 }
 
-extension BitmapTable {
-    /// Deinitializer - frees owned tables
-    deinit {
-        if ownership == .owned {
-            // Free the C bitmap table structure
-            // This invalidates ALL bitmaps obtained from this table
-            graphicsAPI.freeBitmapTable(pointer)
-        }
-        // borrowed tables are not freed - system manages them
-    }
-
-    /// Internal access to C pointer for C API operations
-    var cPointer: OpaquePointer {
-        return pointer
-    }
-}
-
 // MARK: - Private Helpers
 
 private extension BitmapTable {
@@ -967,7 +965,7 @@ private extension BitmapTable {
     ///
     /// Fetches count and cellsWide from the underlying C structure.
     /// Called lazily when cellsWide is first accessed or after loadInto().
-    mutating func updateTableInfo() {
+    func updateTableInfo() {
         var count: Int32 = 0
         var cellsWide: Int32 = 0
 
@@ -982,7 +980,7 @@ private extension BitmapTable {
     ///
     /// Gets dimensions by querying the first bitmap in the table.
     /// Called lazily when bitmapWidth/bitmapHeight are first accessed.
-    mutating func updateBitmapDimensions() {
+    func updateBitmapDimensions() {
         // Try to get first bitmap
         guard _count > 0,
               let firstBitmap = self[0]
