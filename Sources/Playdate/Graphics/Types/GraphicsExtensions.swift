@@ -1025,6 +1025,26 @@ extension Pattern: CustomStringConvertible {
     }
 }
 
+public extension Pattern {
+    /// Execute body with this pattern as LCDColor value
+    /// Ensures pattern data remains valid during execution
+    ///
+    /// Example:
+    /// ```swift
+    /// let pattern = Pattern(rows: 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55)
+    /// pattern.withColorValue { color in
+    ///     graphicsAPI.setColor(color)
+    ///     graphicsAPI.fillRect(x, y, width, height, color)
+    /// }
+    /// ```
+    func withColorValue<Result>(_ body: (LCDColor) -> Result) -> Result {
+        return withUnsafeBytes(of: bytes) { buffer in
+            let color = LCDColor(UInt(bitPattern: buffer.baseAddress))
+            return body(color)
+        }
+    }
+}
+
 // MARK: - Convenience Type Aliases
 
 /// Convenience typealias for common rect operations

@@ -73,28 +73,59 @@ public final class Bitmap {
 
     // MARK: - Initialization - Creation
 
+    // MARK: - Private Initialization
+
+    /// Internal unsafe initializer - assumes pointer is valid
+    private init(ownedPointer ptr: OpaquePointer, sourcePath: String?) {
+        pointer = ptr
+        ownership = .owned
+        self.sourcePath = sourcePath
+    }
+
+    /// Internal initializer for borrowed bitmap pointer (system owned)
+    /// - Parameter borrowedPointer: Pointer to system-owned bitmap (won't be freed)
+    private init(borrowedPointer: OpaquePointer) {
+        pointer = borrowedPointer
+        ownership = .borrowed
+        sourcePath = nil
+    }
+
+    // MARK: - Initialization - Creation
+
     /// Create a new bitmap with specified dimensions and background color
     ///
     /// - Parameters:
     ///   - width: Width in pixels (must be > 0)
     ///   - height: Height in pixels (must be > 0)
     ///   - color: Background color to fill bitmap (default: clear)
-    /// - Throws: GraphicsError if allocation fails
-    public init(width: Int32, height: Int32, color: Color = .clear) throws {
+    /// - Returns: Result with Bitmap on success or GraphicsError on failure
+    ///
+    /// Example:
+    /// ```swift
+    /// switch Bitmap.create(width: 100, height: 100) {
+    /// case .success(let bitmap):
+    ///     // Use bitmap
+    /// case .failure(let error):
+    ///     print("Failed to create bitmap: \(error)")
+    /// }
+    /// ```
+    public static func create(
+        width: Int32,
+        height: Int32,
+        color: Color = .clear
+    ) -> Result<Bitmap, GraphicsError> {
         guard width > 0, height > 0 else {
-            throw GraphicsError.invalidDimensions(width: width, height: height)
+            return .failure(.invalidDimensions(width: width, height: height))
         }
 
         guard let ptr = graphicsAPI.newBitmap(width, height, color.cValue) else {
-            throw GraphicsError.memoryAllocationFailed(
-                operation: "Failed to allocate bitmap \(width)x\(height)",
-                size: width * height / 8 // approximate size in bytes
-            )
+            return .failure(.memoryAllocationFailed(
+                operation: "bitmap creation \(width)x\(height)",
+                size: width * height / 8
+            ))
         }
 
-        pointer = ptr
-        ownership = .owned
-        sourcePath = nil
+        return .success(Bitmap(ownedPointer: ptr, sourcePath: nil))
     }
 
     /// Create a new bitmap with Size
@@ -102,9 +133,9 @@ public final class Bitmap {
     /// - Parameters:
     ///   - size: Dimensions of the bitmap
     ///   - color: Background color to fill bitmap (default: clear)
-    /// - Throws: GraphicsError if allocation fails
-    public convenience init(size: Size, color: Color = .clear) throws {
-        try self.init(width: size.width, height: size.height, color: color)
+    /// - Returns: Result with Bitmap on success or GraphicsError on failure
+    public static func create(size: Size, color: Color = .clear) -> Result<Bitmap, GraphicsError> {
+        return create(width: size.width, height: size.height, color: color)
     }
 
     // MARK: - Initialization - Loading
@@ -112,40 +143,50 @@ public final class Bitmap {
     /// Load bitmap from file path
     ///
     /// - Parameter path: Path to bitmap file (relative to project root)
-    /// - Throws: GraphicsError if file not found or load fails
-    public init(path: String) throws {
+    /// - Returns: Result with Bitmap on success or GraphicsError on failure
+    ///
+    /// Example:
+    /// ```swift
+    /// switch Bitmap.load(path: "images/player.png") {
+    /// case .success(let bitmap):
+    ///     bitmap.draw(at: .zero)
+    /// case .failure(let error):
+    ///     print("Failed to load bitmap: \(error)")
+    /// }
+    /// ```
+    public static func load(path: String) -> Result<Bitmap, GraphicsError> {
         var errorPtr: UnsafePointer<CChar>?
 
         guard let ptr = graphicsAPI.loadBitmap(path, &errorPtr) else {
             let errorMessage = errorPtr.map { String(cString: $0) }
                 ?? "Unknown error loading bitmap"
-            throw GraphicsError.bitmapLoadFailed(
+            return .failure(.bitmapLoadFailed(
                 path: path,
                 reason: errorMessage
-            )
+            ))
         }
 
-        pointer = ptr
-        ownership = .owned
-        sourcePath = path
+        return .success(Bitmap(ownedPointer: ptr, sourcePath: path))
     }
 
     /// Load bitmap into existing bitmap (replaces content)
     ///
     /// - Parameter path: Path to bitmap file
-    /// - Throws: GraphicsError if file not found or load fails
-    public func load(from path: String) throws {
+    /// - Returns: Result with success or GraphicsError on failure
+    public func loadInto(path: String) -> Result<Void, GraphicsError> {
         var errorPtr: UnsafePointer<CChar>?
 
         graphicsAPI.loadIntoBitmap(path, pointer, &errorPtr)
 
         if let error = errorPtr {
             let errorMessage = String(cString: error)
-            throw GraphicsError.bitmapLoadFailed(
+            return .failure(.bitmapLoadFailed(
                 path: path,
                 reason: errorMessage
-            )
+            ))
         }
+
+        return .success(())
     }
 
     // MARK: - Initialization - Copying
@@ -153,58 +194,115 @@ public final class Bitmap {
     /// Create a copy of another bitmap
     ///
     /// - Parameter other: Bitmap to copy
-    /// - Throws: GraphicsError if copy fails
-    public init(copying other: Bitmap) throws {
+    /// - Returns: Result with copied Bitmap on success or GraphicsError on failure
+    public static func copy(from other: Bitmap) -> Result<Bitmap, GraphicsError> {
         guard let ptr = graphicsAPI.copyBitmap(other.pointer) else {
-            throw GraphicsError.memoryAllocationFailed(
-                operation: "Failed to copy bitmap \(width)x\(height)",
-                size: width * height / 8 // approximate size in bytes
-            )
+            return .failure(.memoryAllocationFailed(
+                operation: "bitmap copy \(other.width)x\(other.height)",
+                size: other.width * other.height / 8
+            ))
         }
 
-        pointer = ptr
-        ownership = .owned
-        sourcePath = other.sourcePath
+        return .success(Bitmap(ownedPointer: ptr, sourcePath: other.sourcePath))
     }
 
     /// Create a copy of the current display buffer
     ///
-    /// - Returns: New bitmap containing display buffer contents
-    /// - Throws: GraphicsError if copy fails
-    /// - Note: This creates an OWNED bitmap that must be freed
-    public static func copyFrameBuffer() throws -> Bitmap {
+    /// - Returns: Result with frame buffer Bitmap on success or GraphicsError on failure
+    public static func copyFrameBuffer() -> Result<Bitmap, GraphicsError> {
         guard let ptr = graphicsAPI.copyFrameBufferBitmap() else {
-            throw GraphicsError.memoryAllocationFailed(
-                operation: "Failed to copy frame buffer",
+            return .failure(.memoryAllocationFailed(
+                operation: "frame buffer copy",
                 size: nil
-            )
+            ))
         }
-        return Bitmap(ownedPointer: ptr, sourcePath: nil)
+
+        return .success(Bitmap(ownedPointer: ptr, sourcePath: nil))
     }
+
+    // MARK: - System Bitmap Access
 
     /// Get reference to the display buffer bitmap
     ///
-    /// - Returns: Borrowed bitmap (system owned - do not free!)
+    /// - Returns: Result with borrowed bitmap (system owned) or error
     /// - Warning: The system owns this bitmap. Do not attempt to free it.
-    public static func getDisplayBuffer() -> Bitmap {
-        let ptr = graphicsAPI.getDisplayBufferBitmap()!
-        return Bitmap(borrowedPointer: ptr)
+    ///
+    /// Example:
+    /// ```swift
+    /// switch Bitmap.getDisplayBuffer() {
+    /// case .success(let displayBuffer):
+    ///     // Work with display buffer
+    ///     displayBuffer.draw(at: .zero)
+    /// case .failure(let error):
+    ///     print("Failed to get display buffer: \(error)")
+    /// }
+    /// ```
+    public static func getDisplayBuffer() -> Result<Bitmap, GraphicsError> {
+        guard let ptr = graphicsAPI.getDisplayBufferBitmap() else {
+            return .failure(.memoryAllocationFailed(
+                operation: "get display buffer",
+                size: nil
+            ))
+        }
+
+        return .success(Bitmap(borrowedPointer: ptr))
     }
 
-    // MARK: - Internal Initializers
+    // MARK: - Convenience Failable Initializers
 
-    /// Internal initializer for owned bitmap pointer
-    init(ownedPointer: OpaquePointer, sourcePath: String?) {
-        pointer = ownedPointer
-        ownership = .owned
-        self.sourcePath = sourcePath
+    /// Convenience failable initializer for creating bitmap
+    ///
+    /// - Parameters:
+    ///   - width: Width in pixels
+    ///   - height: Height in pixels
+    ///   - color: Background color
+    /// - Returns: Bitmap instance or nil if creation fails
+    public convenience init?(width: Int32, height: Int32, color: Color = .clear) {
+        guard width > 0, height > 0 else {
+            return nil
+        }
+
+        guard let ptr = graphicsAPI.newBitmap(width, height, color.cValue) else {
+            return nil
+        }
+
+        self.init(ownedPointer: ptr, sourcePath: nil)
     }
 
-    /// Internal initializer for borrowed bitmap pointer (system owned)
-    init(borrowedPointer: OpaquePointer) {
-        pointer = borrowedPointer
-        ownership = .borrowed
-        sourcePath = nil
+    /// Convenience failable initializer for loading bitmap
+    ///
+    /// - Parameter path: Path to bitmap file
+    /// - Returns: Bitmap instance or nil if load fails
+    public convenience init?(path: String) {
+        var errorPtr: UnsafePointer<CChar>?
+
+        guard let ptr = graphicsAPI.loadBitmap(path, &errorPtr) else {
+            return nil
+        }
+
+        self.init(ownedPointer: ptr, sourcePath: path)
+    }
+
+    /// Convenience failable initializer for copying bitmap
+    ///
+    /// - Parameter copying: Bitmap to copy
+    /// - Returns: Copied bitmap instance or nil if copy fails
+    public convenience init?(copying other: Bitmap) {
+        guard let ptr = graphicsAPI.copyBitmap(other.pointer) else {
+            return nil
+        }
+
+        self.init(ownedPointer: ptr, sourcePath: other.sourcePath)
+    }
+
+    /// Convenience failable initializer with Size
+    ///
+    /// - Parameters:
+    ///   - size: Dimensions of the bitmap
+    ///   - color: Background color
+    /// - Returns: Bitmap instance or nil if creation fails
+    public convenience init?(size: Size, color: Color = .clear) {
+        self.init(width: size.width, height: size.height, color: color)
     }
 
     // MARK: - Deinitialization
@@ -421,17 +519,11 @@ public extension Bitmap {
     ///   - yScale: Vertical scale factor (default: 1.0)
     /// - Returns: New rotated bitmap
     /// - Throws: GraphicsError if rotation fails
-    ///
-    /// Example:
-    /// ```swift
-    /// let rotated90 = try bitmap.rotated(by: 90)
-    /// let rotatedScaled = try bitmap.rotated(by: 45, xScale: 0.5, yScale: 0.5)
-    /// ```
     func rotated(
         by rotation: Float,
         xScale: Float = 1.0,
         yScale: Float = 1.0
-    ) throws -> Bitmap {
+    ) throws(GraphicsError) -> Bitmap {
         var allocatedSize: Int32 = 0
 
         guard let ptr = graphicsAPI.rotatedBitmap(
@@ -457,7 +549,7 @@ public extension Bitmap {
     ///   - yScale: Vertical scale factor
     /// - Returns: New scaled bitmap
     /// - Throws: GraphicsError if scaling fails
-    func scaled(xScale: Float, yScale: Float) throws -> Bitmap {
+    func scaled(xScale: Float, yScale: Float) throws(GraphicsError) -> Bitmap {
         return try rotated(by: 0, xScale: xScale, yScale: yScale)
     }
 
@@ -466,7 +558,7 @@ public extension Bitmap {
     /// - Parameter scale: Uniform scale factor
     /// - Returns: New scaled bitmap
     /// - Throws: GraphicsError if scaling fails
-    func scaled(by scale: Float) throws -> Bitmap {
+    func scaled(by scale: Float) throws(GraphicsError) -> Bitmap {
         return try scaled(xScale: scale, yScale: scale)
     }
 
@@ -475,7 +567,7 @@ public extension Bitmap {
     /// - Parameter direction: Flip direction (horizontal or vertical)
     /// - Returns: New flipped bitmap
     /// - Throws: GraphicsError if flip fails
-    func flipped(_ direction: FlipDirection) throws -> Bitmap {
+    func flipped(_ direction: FlipDirection) throws(GraphicsError) -> Bitmap {
         switch direction {
         case .horizontal:
             return try rotated(by: 0, xScale: -1.0, yScale: 1.0)
@@ -527,10 +619,7 @@ public extension Bitmap {
 public extension Bitmap {
     /// Set a mask bitmap for this bitmap
     ///
-    /// The mask bitmap's pixels determine which pixels of this bitmap are visible.
-    /// Clear pixels in the mask make corresponding pixels transparent.
-    ///
-    /// - Parameter mask: Bitmap to use as mask, or nil to remove mask
+    /// - Parameter mask: Mask bitmap, or nil to remove mask
     /// - Throws: GraphicsError if mask operation fails
     ///
     /// Example:
@@ -539,7 +628,7 @@ public extension Bitmap {
     /// let mask = try Bitmap(path: "images/player-mask.png")
     /// try sprite.setMask(mask)
     /// ```
-    func setMask(_ mask: Bitmap?) throws {
+    func setMask(_ mask: Bitmap?) throws(GraphicsError) {
         let result: Int32
 
         if let mask = mask {
@@ -575,7 +664,7 @@ public extension Bitmap {
     /// Remove mask from this bitmap
     ///
     /// - Throws: GraphicsError if mask removal fails
-    func removeMask() throws {
+    func removeMask() throws(GraphicsError) {
         try setMask(nil)
     }
 }
@@ -652,15 +741,21 @@ extension Bitmap: CustomStringConvertible {
 // MARK: - Additional Utility Methods
 
 public extension Bitmap {
-    /// Create a copy of this bitmap with a mask applied
+    /// Create a copy of this bitmap with a different mask
     ///
     /// - Parameter mask: Mask bitmap to apply
-    /// - Returns: New bitmap with mask applied
-    /// - Throws: GraphicsError if operation fails
-    func withMask(_ mask: Bitmap) throws -> Bitmap {
-        let copy = try Bitmap(copying: self)
-        try copy.setMask(mask)
-        return copy
+    /// - Returns: New bitmap with the specified mask
+    /// - Throws: GraphicsError if copy or mask operation fails
+    func withMask(_ mask: Bitmap) throws(GraphicsError) -> Bitmap {
+        // Используем switch вместо .get()
+        switch Bitmap.copy(from: self) {
+        case let .success(copy):
+            try copy.setMask(mask)
+            return copy
+
+        case let .failure(error):
+            throw error
+        }
     }
 
     /// Check if bitmap is the display buffer

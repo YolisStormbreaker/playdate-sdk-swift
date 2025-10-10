@@ -126,6 +126,10 @@ public enum SolidColor: UInt32, Sendable {
     public var cValue: LCDSolidColor {
         return LCDSolidColor(rawValue: rawValue).unsafelyUnwrapped
     }
+
+    public var colorValue: LCDColor {
+        return LCDColor(rawValue)
+    }
 }
 
 /// An 8x8 pixel fill pattern
@@ -151,6 +155,15 @@ public struct Pattern: Sendable {
                  maskRows.0, maskRows.1, maskRows.2, maskRows.3,
                  maskRows.4, maskRows.5, maskRows.6, maskRows.7)
     }
+
+    /// Conversion to LCDColor (pointer value)
+    /// - Warning: Pattern must remain alive while this value is used.
+    ///           Store patterns as constants or instance variables.
+    public var colorValue: LCDColor {
+        return withUnsafeBytes(of: bytes) { buffer in
+            LCDColor(UInt(bitPattern: buffer.baseAddress))
+        }
+    }
 }
 
 /// The color for drawing can be a solid color or a pattern.
@@ -167,8 +180,10 @@ public enum Color: Sendable {
 
     public var cValue: LCDColor {
         return switch self {
-        case .solid: self.cValue
-        case .pattern: self.cValue
+        case let .solid(solidColor):
+            solidColor.colorValue
+        case let .pattern(pattern):
+            pattern.colorValue
         }
     }
 }
