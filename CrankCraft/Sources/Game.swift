@@ -34,16 +34,8 @@ struct Game {
 
         GraphicsLegacy.clear(color: LCDSolidColor.colorWhite.asLCDColor)
 
-        switch Bitmap.load(path: "assets/images/launcher/icon.png") {
-        case let .success(bitmap):
-        case let .failure(error):
-            _ = GraphicsLegacy.drawText(
-                "\(error)",
-                encoding: PDStringEncoding.kUTF8Encoding,
-                x: 0,
-                y: 100,
-            )
-        }
+        iconBitmap?.drawCenteredOnScreen()
+
         _ = GraphicsLegacy.drawText(
             "Hello World!",
             encoding: PDStringEncoding.kUTF8Encoding,
