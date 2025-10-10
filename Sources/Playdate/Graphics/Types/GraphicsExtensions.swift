@@ -1055,3 +1055,74 @@ public typealias Coordinate = Point
 
 /// Convenience typealias for dimensions
 public typealias Dimensions = Size
+
+// MARK: - Result Convenience Extensions
+
+public extension Result where Success == Bitmap, Failure == GraphicsError {
+    /// Get bitmap or nil (silent failure)
+    ///
+    /// Example:
+    /// ```swift
+    /// let bitmap = Bitmap.load("icon.png").orNil
+    /// bitmap?.draw(at: .zero)
+    /// ```
+    var orNil: Bitmap? {
+        try? get()
+    }
+
+    /// Get bitmap or crash with message (development only)
+    ///
+    /// Example:
+    /// ```swift
+    /// let bitmap = Bitmap.load("icon.png").orCrash()
+    /// ```
+    func orCrash(file: String = #file, line: Int = #line) -> Bitmap {
+        switch self {
+        case let .success(bitmap):
+            return bitmap
+        case let .failure(error):
+            fatalError("Bitmap operation failed: \(error) at \(file):\(line)")
+        }
+    }
+
+    /// Get bitmap or default fallback
+    ///
+    /// Example:
+    /// ```swift
+    /// let fallback = Bitmap(width: 32, height: 32)!
+    /// let bitmap = Bitmap.load("icon.png").or(fallback)
+    /// ```
+    func or(_ fallback: Bitmap) -> Bitmap {
+        (try? get()) ?? fallback
+    }
+
+    /// Execute block only on success
+    ///
+    /// Example:
+    /// ```swift
+    /// Bitmap.load("icon.png").onSuccess { bitmap in
+    ///     bitmap.drawCenteredOnScreen()
+    /// }
+    /// ```
+    func onSuccess(_ block: (Bitmap) -> Void) {
+        if case let .success(bitmap) = self {
+            block(bitmap)
+        }
+    }
+
+    /// Execute block only on failure
+    ///
+    /// Example:
+    /// ```swift
+    /// Bitmap.load("icon.png")
+    ///     .onSuccess { $0.draw(at: .zero) }
+    ///     .onFailure { print("Error: \($0)") }
+    /// ```
+    @discardableResult
+    func onFailure(_ block: (GraphicsError) -> Void) -> Self {
+        if case let .failure(error) = self {
+            block(error)
+        }
+        return self
+    }
+}

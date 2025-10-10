@@ -9,6 +9,8 @@ struct Game {
     private var dx: Int32 = 1
     private var dy: Int32 = 2
 
+    let iconBitmap: Bitmap?
+
     init() {
         // Setup the device before any other operations.
         srand(System.getSecondsSinceEpoch(milliseconds: nil))
@@ -22,6 +24,8 @@ struct Game {
                 GraphicsLegacy.drawText("Failed to load font: \(error)", x: 10, y: 10)
             }
         }
+
+        iconBitmap = Bitmap.load(path: "assets/images/launcher/icon.png").orNil
     }
 
     mutating func updateGame() {
@@ -29,9 +33,9 @@ struct Game {
         let TEXT_HEIGHT: Int32 = 16
 
         GraphicsLegacy.clear(color: LCDSolidColor.colorWhite.asLCDColor)
+
         switch Bitmap.load(path: "assets/images/launcher/icon.png") {
         case let .success(bitmap):
-            bitmap.drawCenteredOnScreen()
         case let .failure(error):
             _ = GraphicsLegacy.drawText(
                 "\(error)",
