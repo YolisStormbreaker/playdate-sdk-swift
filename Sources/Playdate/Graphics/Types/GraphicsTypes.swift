@@ -5,6 +5,15 @@
 // Centralized types, constants, and Swift wrappers for the C API
 //
 
+import CPlaydate
+
+// MARK: - Graphics API Accessor
+
+/// Access to Playdate graphics C API
+private var graphicsAPI: playdate_graphics {
+    playdateAPI.graphics.unsafelyUnwrapped.pointee
+}
+
 // MARK: - Screen Constants
 
 /// Screen Constants Playdate
@@ -635,5 +644,224 @@ public extension Rotation {
     /// Negate rotation
     static prefix func - (rotation: Rotation) -> Rotation {
         return Rotation(degrees: -rotation.degrees)
+    }
+}
+
+// MARK: - Font Types (C API Opaque Wrappers)
+
+/// C API opaque type for font page
+///
+/// Represents internal LCDFontPage structure from Playdate SDK.
+/// Font pages contain glyph information for 256 characters each.
+public typealias LCDFontPage = OpaquePointer
+
+/// C API opaque type for font glyph
+///
+/// Represents internal LCDFontGlyph structure from Playdate SDK.
+/// Contains bitmap data, metrics, and kerning information for a single character.
+public typealias LCDFontGlyph = OpaquePointer
+
+/// Swift wrapper for LCDFontPage
+///
+/// Represents a page of font glyphs. Font pages organize characters into
+/// groups of 256. Characters with `(c1 & ~0xff) == (c2 & ~0xff)` belong
+/// to the same page.
+///
+/// - Note: This is a wrapper around an opaque C structure.
+///         The actual data is managed by the Playdate graphics API.
+///
+/// Example:
+/// ```swift
+/// // Internal use - typically accessed through Font methods
+/// if let page = font.getFontPage(for: 65) { // 'A'
+///     let glyph = page.getGlyph(for: 65)
+///     print("Glyph advance: \(glyph.advance)")
+/// }
+/// ```
+public struct FontPage: @unchecked Sendable {
+    /// Pointer to underlying C structure
+    let pointer: LCDFontPage
+
+    /// Create FontPage wrapper from C pointer
+    ///
+    /// - Parameter pointer: Pointer to LCDFontPage structure
+    init(_ pointer: LCDFontPage) {
+        self.pointer = pointer
+    }
+
+    /// Get glyph for character from this page
+    ///
+    /// - Parameter character: Unicode character code
+    /// - Returns: FontGlyph if character exists in page, nil otherwise
+    ///
+    /// Example:
+    /// ```swift
+    /// if let glyph = page.getGlyph(for: 65) { // 'A'
+    ///     print("Character 'A' found")
+    /// }
+    /// ```
+    public func getGlyph(for character: UInt32) -> FontGlyph? {
+        var bitmapPtr: OpaquePointer?
+        var advance: Int32 = 0
+
+        guard let glyphPtr = graphicsAPI.getPageGlyph(
+            pointer,
+            character,
+            &bitmapPtr,
+            &advance
+        ) else {
+            return nil
+        }
+
+        var bitmap: Bitmap?
+        if let pointer = bitmapPtr {
+            bitmap = Bitmap(borrowedPointer: pointer)
+        } else {
+            bitmap = nil
+        }
+
+        return FontGlyph(
+            pointer: glyphPtr,
+            bitmap: bitmap,
+            advance: advance
+        )
+    }
+}
+
+/// Swift wrapper for LCDFontGlyph
+///
+/// Represents a single character glyph in a font, containing:
+/// - Bitmap image data
+/// - Advance width (spacing to next character)
+/// - Kerning information (spacing adjustments with other characters)
+///
+/// - Note: This is a wrapper around an opaque C structure.
+///         The actual data is managed by the Playdate graphics API.
+///
+/// Example:
+/// ```swift
+/// if let glyph = font.getGlyph(for: "A") {
+///     print("Advance: \(glyph.advance)px")
+///
+///     if let bitmap = glyph.bitmap {
+///         // Use bitmap for custom rendering
+///     }
+///
+///     let kerning = glyph.getKerning(with: "V")
+///     print("Kerning A-V: \(kerning)px")
+/// }
+/// ```
+public struct FontGlyph: @unchecked Sendable {
+    /// Pointer to underlying C glyph structure
+    let pointer: LCDFontGlyph
+
+    /// Bitmap image for this glyph (may be nil for whitespace)
+    public let bitmap: Bitmap?
+
+    /// Advance width - horizontal distance to next character in pixels
+    public let advance: Int32
+
+    /// Create FontGlyph wrapper from C data
+    ///
+    /// - Parameters:
+    ///   - pointer: Pointer to LCDFontGlyph structure
+    ///   - bitmap: Optional pointer to glyph bitmap
+    ///   - advance: Advance width in pixels
+    init(
+        pointer: LCDFontGlyph,
+        bitmap: Bitmap?,
+        advance: Int32
+    ) {
+        self.pointer = pointer
+        self.bitmap = bitmap
+        self.advance = advance
+    }
+
+    /// Get kerning adjustment between this glyph and another character
+    ///
+    /// Kerning is the adjustment of spacing between specific character pairs
+    /// to improve visual appearance (e.g., "AV" might be closer than "AA").
+    ///
+    /// - Parameters:
+    ///   - firstChar: Unicode code of this character
+    ///   - secondChar: Unicode code of following character
+    /// - Returns: Kerning adjustment in pixels (can be negative)
+    ///
+    /// Example:
+    /// ```swift
+    /// let glyphA = font.getGlyph(for: "A")!
+    /// let kerning = glyphA.getKerning(
+    ///     between: 65,  // 'A'
+    ///     and: 86       // 'V'
+    /// )
+    /// print("A-V kerning: \(kerning)px")
+    /// ```
+    public func getKerning(between firstChar: UInt32, and secondChar: UInt32) -> Int32 {
+        return graphicsAPI.getGlyphKerning(pointer, firstChar, secondChar)
+    }
+
+    /// Check if glyph has a bitmap (not whitespace)
+    ///
+    /// - Returns: true if glyph has renderable bitmap data
+    ///
+    /// Example:
+    /// ```swift
+    /// if glyph.hasBitmap {
+    ///     // Render the glyph
+    /// }
+    /// ```
+    public var hasBitmap: Bool {
+        return bitmap != nil
+    }
+}
+
+// MARK: - FontPage Extensions
+
+extension FontPage: Equatable {
+    /// Compare font pages for equality
+    ///
+    /// Font pages are equal if they point to the same C structure.
+    public static func == (lhs: FontPage, rhs: FontPage) -> Bool {
+        return lhs.pointer == rhs.pointer
+    }
+}
+
+extension FontPage: Hashable {
+    /// Hash font page based on pointer
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(Int(bitPattern: pointer))
+    }
+}
+
+extension FontPage: CustomStringConvertible {
+    /// Human-readable description of font page
+    public var description: String {
+        return "FontPage(pointer: 0x\(String(Int(bitPattern: pointer), radix: 16)))"
+    }
+}
+
+// MARK: - FontGlyph Extensions
+
+extension FontGlyph: Equatable {
+    /// Compare font glyphs for equality
+    ///
+    /// Font glyphs are equal if they point to the same C structure.
+    public static func == (lhs: FontGlyph, rhs: FontGlyph) -> Bool {
+        return lhs.pointer == rhs.pointer
+    }
+}
+
+extension FontGlyph: Hashable {
+    /// Hash font glyph based on pointer
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(Int(bitPattern: pointer))
+    }
+}
+
+extension FontGlyph: CustomStringConvertible {
+    /// Human-readable description of font glyph
+    public var description: String {
+        let bitmapDesc = hasBitmap ? "with bitmap" : "no bitmap"
+        return "FontGlyph(advance: \(advance)px, \(bitmapDesc))"
     }
 }

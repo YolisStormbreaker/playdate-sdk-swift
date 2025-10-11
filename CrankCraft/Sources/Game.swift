@@ -2,7 +2,6 @@ import Playdate
 
 struct Game {
     let fontPath = "/System/Fonts/Asheville-Sans-14-Bold.pft"
-    var font: LCDFont?
 
     private var x: Int32 = 0
     private var y: Int32 = 0
@@ -15,14 +14,11 @@ struct Game {
         // Setup the device before any other operations.
         srand(System.getSecondsSinceEpoch(milliseconds: nil))
         Display.setRefreshRate(rate: 0)
-        if font == nil {
-            let result = GraphicsLegacy.loadFont(path: fontPath)
-            switch result {
-            case let .success(font):
-                GraphicsLegacy.setFont(font)
-            case let .failure(error):
-                GraphicsLegacy.drawText("Failed to load font: \(error)", x: 10, y: 10)
-            }
+        switch Font.load(path: fontPath) {
+        case let .success(font):
+            font.setAsCurrent()
+        case let .failure(error):
+            Graphics.drawText("Failed to load font: \(error.description)", at: Point(x: 10, y: 10))
         }
 
         iconBitmap = Bitmap.load(path: "assets/images/launcher/icon.png").orNil
@@ -36,11 +32,10 @@ struct Game {
 
         iconBitmap?.drawCenteredOnScreen()
 
-        _ = GraphicsLegacy.drawText(
+        _ = Graphics.drawText(
             "Hello World!",
-            encoding: PDStringEncoding.kUTF8Encoding,
-            x: x,
-            y: y,
+            at: Point(x: x, y: y),
+            encoding: StringEncoding.utf8,
         )
 
         x += dx
