@@ -56,7 +56,7 @@ public final class Font: @unchecked Sendable {
     // MARK: - Private Properties
 
     /// Pointer to underlying LCDFont C structure
-    private let pointer: UnsafeMutablePointer<LCDFont>
+    private let pointer: OpaquePointer
 
     /// Ownership type - determines if font should be freed in deinit
     private let ownership: Ownership
@@ -87,7 +87,7 @@ public final class Font: @unchecked Sendable {
     /// let line2Y: Int32 = line1Y + font.height
     /// ```
     public var height: Int32 {
-        return Int32(graphicsAPI.getFontHeight(pointer.pointee))
+        return Int32(graphicsAPI.getFontHeight(pointer))
     }
 
     /// Original file path if font was loaded from file
@@ -114,7 +114,7 @@ public final class Font: @unchecked Sendable {
     /// - Parameters:
     ///   - ownedPointer: Valid LCDFont pointer (will be freed)
     ///   - sourcePath: Original file path if loaded from file
-    private init(ownedPointer ptr: UnsafeMutablePointer<LCDFont>, sourcePath: String?) {
+    private init(ownedPointer ptr: OpaquePointer, sourcePath: String?) {
         pointer = ptr
         ownership = .owned
         self.sourcePath = sourcePath
@@ -123,7 +123,7 @@ public final class Font: @unchecked Sendable {
     /// Internal initializer for borrowed font pointer (system owned)
     ///
     /// - Parameter borrowedPointer: Pointer to system-owned font (won't be freed)
-    private init(borrowedPointer: UnsafeMutablePointer<LCDFont>) {
+    private init(borrowedPointer: OpaquePointer) {
         pointer = borrowedPointer
         ownership = .borrowed
         sourcePath = nil
@@ -134,13 +134,13 @@ public final class Font: @unchecked Sendable {
         if ownership == .owned {
             // Free the C font structure
             // Per SDK docs: "can be freed with playdate→system→realloc(font, 0)"
-            _ = playdateAPI.system.unsafelyUnwrapped.pointee.realloc(pointer, 0)
+            _ = playdateAPI.system.unsafelyUnwrapped.pointee.realloc(UnsafeMutablePointer(pointer), 0)
         }
         // borrowed fonts are not freed - system manages them
     }
 
     /// Internal access to C pointer for C API operations
-    var cPointer: UnsafeMutablePointer<LCDFont> {
+    var cPointer: OpaquePointer {
         return pointer
     }
 }
@@ -189,7 +189,7 @@ public extension Font {
             ))
         }
 
-        return .success(Font(ownedPointer: UnsafeMutablePointer(ptr), sourcePath: path))
+        return .success(Font(ownedPointer: ptr, sourcePath: path))
     }
 
     /// Get system font (Asheville Sans 14 Light)
@@ -213,11 +213,11 @@ public extension Font {
     /// ```
     static func systemFont() -> Font {
         // Lazy singleton for system font
-        enum SystemFont {
+        enum LazySystemFont {
             static let instance: Font = {
                 // Load system font from known path
                 // Asheville Sans 14 Light is the default Playdate font
-                let result = Font.load(path: "/System/Fonts/Asheville-Sans-14-Light")
+                let result = Font.load(path: SystemFont.ashevilleSans14Light.path)
 
                 switch result {
                 case let .success(font):
@@ -230,7 +230,7 @@ public extension Font {
             }()
         }
 
-        return SystemFont.instance
+        return LazySystemFont.instance
     }
 }
 
@@ -296,11 +296,11 @@ public extension Font {
         // Convert Swift String to C string
         return text.withCString { cString in
             // Calculate length based on encoding
-            let length = text.count
+            let length = text.utf8.count
 
             // Call C API
             return graphicsAPI.getTextWidth(
-                pointer.pointee,
+                pointer,
                 cString,
                 length,
                 encoding.cValue,
@@ -352,10 +352,10 @@ public extension Font {
         extraLeading: Int32 = 0
     ) -> Int32 {
         return text.withCString { cString in
-            let length = text.count
+            let length = text.utf8.count
 
             return graphicsAPI.getTextHeightForMaxWidth(
-                pointer.pointee,
+                pointer,
                 cString,
                 length,
                 maxWidth,
@@ -481,7 +481,7 @@ public extension Font {
     /// bodyFont.setAsCurrent()
     /// ```
     func setAsCurrent() {
-        graphicsAPI.setFont(pointer.pointee)
+        graphicsAPI.setFont(pointer)
     }
 
     /// Execute drawing closure with this font as current
@@ -520,8 +520,8 @@ extension Font {
     ///
     /// - Parameter character: Unicode character code
     /// - Returns: Pointer to font page or nil if not found
-    func getFontPage(for character: UInt32) -> UnsafeMutablePointer<FontPage>? {
-        return UnsafeMutablePointer(graphicsAPI.getFontPage(pointer.pointee, character))
+    func getFontPage(for character: UInt32) -> OpaquePointer? {
+        return graphicsAPI.getFontPage(pointer, character)
     }
 
     /// Get glyph information for character from page
@@ -794,8 +794,8 @@ public extension Result where Success == Font, Failure == GraphicsError {
             - Height: \(height)px
             - Text: "\(text)"
             - Width: \(getTextWidth(text))px
-            - Characters: \(text.count)
-            - Average char width: \(Float(getTextWidth(text)) / Float(text.count))px
+            - Characters: \(text.utf8.count)
+            - Average char width: \(Float(getTextWidth(text)) / Float(text.utf8.count))px
             """)
         }
     }

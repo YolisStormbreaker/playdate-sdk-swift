@@ -1299,6 +1299,41 @@ public extension Bitmap {
             scale: scale
         )
     }
+
+    /// Draw bitmap rotated around center at Point with Scale centered on screen
+    ///
+    /// - Parameters:
+    ///   - point: Position
+    ///   - rotation: Rotation angle
+    ///   - scale: Scale factors
+    func drawRotatedCenteredOnScreen(
+        rotation: Rotation,
+        scale: Scale
+    ) {
+        drawRotatedCentered(
+            at: Point(x: Screen.columns / 2, y: Screen.rows / 2),
+            rotation: rotation,
+            scale: scale
+        )
+    }
+
+    /// Draw bitmap rotated around center at Point with Scale centered on screen
+    ///
+    /// - Parameters:
+    ///   - point: Position
+    ///   - degrees: Rotation angle
+    ///   - scale: Scale factors
+    func drawRotatedCenteredOnScreen(
+        degrees: Float,
+        scale: Scale = Scale(x: 1.0, y: 1.0)
+    ) {
+        drawRotatedCentered(
+            at: Point(x: Screen.columns / 2, y: Screen.rows / 2),
+            degrees: degrees,
+            xScale: scale.x,
+            yScale: scale.y
+        )
+    }
 }
 
 // MARK: - Tiled Drawing

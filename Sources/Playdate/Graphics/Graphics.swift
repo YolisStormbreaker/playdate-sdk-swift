@@ -205,7 +205,7 @@ public extension Graphics {
     /// ```
     static func setFont(_ font: Font?) {
         if let font = font {
-            graphicsAPI.setFont(font.cPointer.pointee)
+            graphicsAPI.setFont(font.cPointer)
         } else {
             // nil means use default system font
             setDefaultFont()
