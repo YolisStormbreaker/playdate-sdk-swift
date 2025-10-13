@@ -8,8 +8,8 @@ struct Game {
     private var degrees: Float = 0.0
 
     private let iconBitmap: Bitmap?
-    // let currentFont: Font
-    var currentFontIndex: Int = 0
+    // private let currentFont: Font
+    private var currentFontIndex: Int = 0
 
     private let systemFontsRaw: [SystemFont] = [
         SystemFont.ashevilleSans14Bold,
@@ -32,7 +32,7 @@ struct Game {
 
         Graphics.setDefaultFont()
 
-        // let loadedFont: Font
+        let loadedFont: Font
 
         iconBitmap = Bitmap.load(path: "assets/images/launcher/icon.png").orNil
 
@@ -42,7 +42,7 @@ struct Game {
             }
         }
 
-        // switch Font.load(path: SystemFont.roobert20Medium.path) {
+        // switch Font.load(path: "assets/fonts/Roboto-Regular-20.pft") {
         // case let .success(font):
         //     loadedFont = font
         //     font.setAsCurrent()
@@ -64,32 +64,36 @@ struct Game {
     }
 
     mutating func updateGame() {
-        let TEXT_WIDTH: Int32 = 86
-        let TEXT_HEIGHT: Int32 = 16
-
         GraphicsLegacy.clear(color: LCDSolidColor.colorWhite.asLCDColor)
 
         iconBitmap?.drawRotatedCenteredOnScreen(
             degrees: degrees
         )
 
+        let currentSystemFont = systemFonts[currentFontIndex]
+        let bouncingText = "Hello World!"
+        let textWidth: Int32 = Font.systemFont().getTextWidth(bouncingText)
+        let textHeight: Int32 = Font.systemFont().getTextHeight(bouncingText, forMaxWidth: textWidth)
+
         _ = Graphics.drawText(
-            "Hello World!",
+            bouncingText,
             at: Point(x: x, y: y),
             encoding: StringEncoding.utf8,
         )
 
+        Graphics.setDefaultFont()
         Graphics.drawText("Current Font: \(systemFontsRaw[currentFontIndex].displayName)", at: Point(x: 0, y: 10))
+        currentSystemFont.setAsCurrent()
 
         x += dx
         y += dy
 
-        if x < 0 || x > LCD_COLUMNS - TEXT_WIDTH {
+        if x < 0 || x > LCD_COLUMNS - textWidth {
             dx = -dx
             getNextFont().setAsCurrent()
         }
 
-        if y < 0 || y > LCD_ROWS - TEXT_HEIGHT {
+        if y < 0 || y > LCD_ROWS - textHeight {
             dy = -dy
             getNextFont().setAsCurrent()
         }
