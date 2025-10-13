@@ -128,6 +128,40 @@ public enum GraphicsError: Error {
     ///   - totalFrames: Total frames in video
     case invalidVideoFrame(frame: Int32, totalFrames: Int32)
 
+    /// Video player is in invalid state for requested operation
+    /// - Parameters:
+    ///   - operation: The operation that was attempted
+    ///   - currentState: Current player state
+    case videoInvalidState(operation: String, currentState: String)
+
+    /// Video seek operation failed - progress out of bounds
+    /// - Parameters:
+    ///   - requestedProgress: Requested progress (0.0-1.0 or seconds)
+    ///   - maxProgress: Maximum valid progress
+    ///   - reason: Description of why seek failed
+    case videoSeekOutOfBounds(requestedProgress: Float, maxProgress: Float, reason: String)
+
+    /// Invalid progress value provided
+    /// - Parameters:
+    ///   - progress: Invalid progress value
+    ///   - validRange: Valid range description
+    case videoInvalidProgress(progress: Float, validRange: String)
+
+    /// Video update/render cycle failed
+    /// - Parameters:
+    ///   - frame: Current frame when error occurred
+    ///   - reason: Optional C API error message
+    case videoUpdateFailed(frame: Int32?, reason: String?)
+
+    /// Video has reached end
+    /// - Parameters:
+    ///   - finalFrame: The last frame number
+    ///   - duration: Total video duration
+    case videoEndReached(finalFrame: Int32, duration: Float)
+
+    /// Video context bitmap is invalid or released
+    case videoContextInvalid
+
     // MARK: Memory Errors
 
     /// Memory allocation failed
@@ -311,6 +345,25 @@ extension GraphicsError: CustomStringConvertible {
 
         case let .invalidVideoFrame(frame, totalFrames):
             return "Invalid video frame \(frame), total frames: \(totalFrames)"
+
+        case let .videoInvalidState(operation, state):
+            return "Cannot perform '\(operation)' when player is in '\(state)' state"
+
+        case let .videoSeekOutOfBounds(requested, max, reason):
+            return "Seek position \(requested.string) exceeds video duration \(max.string): \(reason)"
+
+        case let .videoInvalidProgress(progress, range):
+            return "Invalid progress value \(progress.string), valid range: \(range)"
+
+        case let .videoUpdateFailed(frame, reason):
+            let frameStr = frame.map { " at frame \($0)" } ?? ""
+            return "Video update failed\(frameStr)\(reason.map { ": \($0)" } ?? "")"
+
+        case let .videoEndReached(finalFrame, duration):
+            return "Video has reached end (frame \(finalFrame), duration \(duration.string)s)"
+
+        case .videoContextInvalid:
+            return "Video context bitmap is invalid or has been released"
 
         // Memory Errors
         case let .memoryAllocationFailed(operation, size):
@@ -503,6 +556,12 @@ public extension GraphicsError {
         case .videoFrameRenderFailed: return 1401
         case .videoContextSetFailed: return 1402
         case .invalidVideoFrame: return 1403
+        case .videoInvalidState: return 1404
+        case .videoSeekOutOfBounds: return 1405
+        case .videoInvalidProgress: return 1406
+        case .videoUpdateFailed: return 1407
+        case .videoEndReached: return 1408
+        case .videoContextInvalid: return 1409
         // Memory Errors: 1500-1599
         case .memoryAllocationFailed: return 1500
         case .outOfMemory: return 1501
